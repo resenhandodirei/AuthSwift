@@ -1,28 +1,29 @@
-import NIOSSL
 import Fluent
 import FluentPostgresDriver
 import Leaf
 import Vapor
 
-// configures your application
-public func configure(_ app: Application) async throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-
-    app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
+public func configure(_ app: Application) throws {
+    // Criando a configuração do banco de dados usando SQLPostgresConfiguration
+    let databaseConfig = SQLPostgresConfiguration(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? SQLPostgresConfiguration.ianaPortNumber,
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database",
-        tls: .prefer(try .init(configuration: .clientDefault)))
-    ), as: .psql)
+        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? 5432,
+        username: Environment.get("DATABASE_USERNAME") ?? "user",
+        password: Environment.get("DATABASE_PASSWORD") ?? "password",
+        database: Environment.get("DATABASE_NAME") ?? "authdb"
+    )
 
+    // Usando a configuração moderna do PostgreSQL
+    app.databases.use(.postgres(configuration: databaseConfig), as: .psql)
+
+    // Registra as migrações
     app.migrations.add(CreateTodo())
+    app.migrations.add(CreateUser())
 
+    // Configura o Leaf para templates
     app.views.use(.leaf)
 
-
-    // register routes
+    // Registra as rotas
     try routes(app)
 }
+
